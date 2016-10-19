@@ -25,6 +25,26 @@ public:
   }
 };
 
+struct pos {
+    size_t x, y;
+    pos(size_t xval, size_t yval) : x(xval), y(yval){}
+
+    bool operator==(const pos & other) {
+        return x == other.x && y == other.y;
+    }
+
+    bool operator!=(const pos & other) {
+        return !(*this==other);
+    }
+};
+
+template<>
+struct hash<pos> {
+    size_t operator()(const pos & p) {
+        return std::hash<size_t>()(p.x)^std::hash<size_t>()(p.y);
+    }
+};
+
 class solution {
   public:
     int trapRainWater(const vector<vector<int>> & heightMap) {
@@ -42,10 +62,12 @@ class solution {
 
 private:
   int enclosedWater(const vector<vector<int>> & grid) {
-    vector<int> row;
-    for (auto & vec : grid)
-      row.push_back(std::count(vec.begin(), vec.end(), 1));
-    return std::accumulate(row.begin(), row.end(), 0);
+      std::unordered_set<pos> cands;
+      for (size_t i = 1; i < grid.size()-1; ++i) {
+          for (size_t j = 1; j < grid[i].size()-1; ++j)
+              if (!grid[i][j])
+                  cands.insert(pos(i,j));
+      }
   }
   
   int maxInMat(const vector<vector<int>> & grid) {
