@@ -1,13 +1,73 @@
 #include <iostream>
 #include <vector>
+#include <algorithm>
+#include <numeric>
 
 using std::vector;
+
+class lessthan {
+private:
+  int height;
+public:
+  lessthan(int h) : height(h){}
+  bool operator()(int val) {
+    return val < height;
+  }
+};
+
+class largerthan {
+private:
+  int height;
+public:
+  largerthan(int h) : height(h){}
+  bool operator()(int val) {
+    return val > height;
+  }
+};
 
 class solution {
   public:
     int trapRainWater(const vector<vector<int>> & heightMap) {
-        
+      int maxht = maxInMat(heightMap);
+      vector<vector<vector<int>>> cross;
+      for (int i = 2; i <= maxht; ++i)
+	cross.push_back(crossCut(heightMap, i));
+
+      int water = 0;
+      for (size_t i = 0; i < cross.size(); ++i)
+	water += enclosedWater(cross[i]);
+
+      return water;
     }
+
+private:
+  int enclosedWater(const vector<vector<int>> & grid) {
+    vector<int> row;
+    for (auto & vec : grid)
+      row.push_back(std::count(vec.begin(), vec.end(), 1));
+    return std::accumulate(row.begin(), row.end(), 0);
+  }
+  
+  int maxInMat(const vector<vector<int>> & grid) {
+    vector<int> rowmax;
+    for (auto & vec : grid) {
+      rowmax.push_back(*std::max_element(vec.begin(), vec.end()));
+    }
+    return *std::max_element(rowmax.begin(), rowmax.end());
+  }
+
+  vector<vector<int>> crossCut(const vector<vector<int>> & map, int hgt) {
+    vector<vector<int>> result;
+    for (auto vec : map) {
+      std::replace_if(vec.begin(), vec.end(), lessthan(hgt), 0);
+      std::replace_if(vec.begin(), vec.end(), largerthan(0), 1);
+      result.push_back(vec);
+      std::for_each(vec.begin(), vec.end(), [](int i){std::cout<<i<<" ";});
+      std::cout << std::endl;
+    }
+    std::cout << std::endl;
+    return result;
+  }
 };
 
 int main() {
@@ -19,5 +79,6 @@ int main() {
 
     solution soln;
     int mostWater = soln.trapRainWater(grid);
-    
+    std::cout << "The volume of rain water can be held is:\n"
+	      << mostWater << std::endl;
 }
