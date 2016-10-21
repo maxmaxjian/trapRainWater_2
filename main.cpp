@@ -4,6 +4,7 @@
 #include <numeric>
 #include <unordered_set>
 #include <functional>
+#include <stack>
 
 using std::vector;
 
@@ -78,89 +79,144 @@ class solution {
     }
 
 private:
-  int enclosedWater(const vector<vector<int>> & grid) {
-    std::unordered_set<pos> cands;
-    for (size_t i = 1; i < grid.size()-1; ++i)
-      for (size_t j = 1; j < grid[i].size()-1; ++j)
-	if (!grid[i][j])
-	  cands.insert(pos(i,j));
-    // std::cout << "size of cands = " << cands.size() << std::endl;
+  // solution 1
+  // int enclosedWater(const vector<vector<int>> & grid) {
+  //   std::unordered_set<pos> cands;
+  //   for (size_t i = 1; i < grid.size()-1; ++i)
+  //     for (size_t j = 1; j < grid[i].size()-1; ++j)
+  // 	if (!grid[i][j])
+  // 	  cands.insert(pos(i,j));
+  //   // std::cout << "size of cands = " << cands.size() << std::endl;
 
-    vector<std::unordered_set<pos>> grps;
-    while (!cands.empty()) {
-      auto it = cands.begin();
-      std::unordered_set<pos> curr{*it};
-      cands.erase(it);
-      auto temp = addNeibs(grid, cands, curr);
-      // std::for_each(temp.begin(), temp.end(), [](const pos & p){p.print();});
-      // std::cout << std::endl;
-      grps.push_back(temp);
-      for (auto p : temp)
-	cands.erase(p);
-      // std::cout << "size of cands = " << cands.size() << std::endl;
-    }
-    // std::cout << "number of grps = " << grps.size() << std::endl;
+  //   vector<std::unordered_set<pos>> grps;
+  //   while (!cands.empty()) {
+  //     auto it = cands.begin();
+  //     std::unordered_set<pos> curr{*it};
+  //     cands.erase(it);
+  //     auto temp = addNeibs(grid, cands, curr);
+  //     // std::for_each(temp.begin(), temp.end(), [](const pos & p){p.print();});
+  //     // std::cout << std::endl;
+  //     grps.push_back(temp);
+  //     for (auto p : temp)
+  // 	cands.erase(p);
+  //     // std::cout << "size of cands = " << cands.size() << std::endl;
+  //   }
+  //   // std::cout << "number of grps = " << grps.size() << std::endl;
 
-    int water = 0;
-    for (auto & grp : grps) {
-      if (isPond(grid, grp))
-	water += grp.size();
-    }
+  //   int water = 0;
+  //   for (auto & grp : grps) {
+  //     if (isPond(grid, grp))
+  // 	water += grp.size();
+  //   }
     
+  //   return water;
+  // }
+
+  // bool isPond(const vector<vector<int>> & grid, const std::unordered_set<pos> & grps) {
+  //   for (auto it = grps.begin(); it != grps.end(); ++it) {
+  //     pos up(it->x-1, it->y);
+  //     if (grps.find(up) == grps.end() && grid[up.x][up.y] == 0)
+  // 	return false;
+  //     pos down(it->x+1, it->y);
+  //     if (grps.find(down) == grps.end() && grid[down.x][down.y] == 0)
+  // 	return false;
+  //     pos left(it->x, it->y-1);
+  //     if (grps.find(left) == grps.end() && grid[left.x][left.y] == 0)
+  // 	return false;
+  //     pos right(it->x, it->y+1);
+  //     if (grps.find(right) == grps.end() && grid[right.x][right.y] == 0)
+  // 	return false;
+  //   }
+  //   return true;
+  // }
+
+  // std::unordered_set<pos> addNeibs(const vector<vector<int>> & grid, std::unordered_set<pos> & cands, const std::unordered_set<pos> & curr) {
+  //   std::unordered_set<pos> result;
+  //   vector<pos> next = getNext(grid, cands, curr);
+  //   if (next.empty())
+  //     result = curr;
+  //   else {
+  //     auto temp = curr;
+  //     temp.insert(next.begin(), next.end());
+  //     auto cpy = cands;
+  //     for (auto p : next)
+  // 	cpy.erase(p);
+  //     result = addNeibs(grid, cpy, temp);
+  //   }
+  //   return result;
+  // }
+
+  // vector<pos> getNext(const vector<vector<int>> & grid, const std::unordered_set<pos> & cands, const std::unordered_set<pos> & curr) {
+  //   vector<pos> next;
+  //   for (auto it = curr.begin(); it != curr.end(); ++it) {
+  //     pos left(it->x-1, it->y);
+  //     if (cands.find(left) != cands.end() && curr.find(left) == curr.end() && grid[left.x][left.y] == 0)
+  // 	next.push_back(left);
+  //     pos right(it->x+1, it->y);
+  //     if (cands.find(right) != cands.end() && curr.find(right) == curr.end()  && grid[right.x][right.y] == 0)
+  // 	next.push_back(right);
+  //     pos up(it->x, it->y-1);
+  //     if (cands.find(up) != cands.end() && curr.find(up) == curr.end() && grid[up.x][up.y] == 0)
+  // 	next.push_back(up);
+  //     pos down(it->x, it->y+1);
+  //     if (cands.find(down) != cands.end() && curr.find(down) == curr.end() && grid[down.x][down.y] == 0)
+  // 	next.push_back(down);
+  //   }
+    
+  //   return next;
+  // }
+
+  // solution 2
+  int enclosedWater(const vector<vector<int>> & grid) {
+    int water = 0;
+    vector<vector<int>> visited(grid.size(), vector<int>(grid[0]));
+    for (size_t i = 1; i < grid.size()-1; ++i) {
+      for (size_t j = 1; j < grid[i].size()-1; ++j) {
+	if (grid[i][j] == 0) {
+	  pos curr(i,j);
+	  auto cpy = visited;
+	  cpy[i][j] = 1;
+	  if (!canFlowout(grid, curr, cpy)) {
+	    water++;
+	    std::cout << "(" << i << "," << j << ")";
+	  }
+	}
+      }
+    }
+    std::cout << std::endl;
     return water;
   }
 
-  bool isPond(const vector<vector<int>> & grid, const std::unordered_set<pos> & grps) {
-    for (auto it = grps.begin(); it != grps.end(); ++it) {
-      pos up(it->x-1, it->y);
-      if (grps.find(up) == grps.end() && grid[up.x][up.y] == 0)
-	return false;
-      pos down(it->x+1, it->y);
-      if (grps.find(down) == grps.end() && grid[down.x][down.y] == 0)
-	return false;
-      pos left(it->x, it->y-1);
-      if (grps.find(left) == grps.end() && grid[left.x][left.y] == 0)
-	return false;
-      pos right(it->x, it->y+1);
-      if (grps.find(right) == grps.end() && grid[right.x][right.y] == 0)
-	return false;
+  bool canFlowout(const vector<vector<int>> & grid, const pos & curr, const vector<vector<int>> & visited) {
+    std::stack<std::pair<pos,vector<vector<int>>>> st;
+    st.push(std::make_pair(curr, visited));
+    while (!st.empty()) {
+      auto p = st.top();
+      st.pop();
+      if (p.first.x == 0 || p.first.x == grid.size()-1 || p.first.y == 0 || p.first.y == grid[0].size()-1)
+	return true;
+      else {
+	auto next = getNext(grid, p.first, p.second);
+	for (auto nx : next) {
+	  auto cpy = p.second;
+	  cpy[nx.x][nx.y] = 1;
+	  st.push(std::make_pair(nx,cpy));
+	}
+      }
     }
-    return true;
+    return false;
   }
 
-  std::unordered_set<pos> addNeibs(const vector<vector<int>> & grid, std::unordered_set<pos> & cands, const std::unordered_set<pos> & curr) {
-    std::unordered_set<pos> result;
-    vector<pos> next = getNext(grid, cands, curr);
-    if (next.empty())
-      result = curr;
-    else {
-      auto temp = curr;
-      temp.insert(next.begin(), next.end());
-      auto cpy = cands;
-      for (auto p : next)
-	cpy.erase(p);
-      result = addNeibs(grid, cpy, temp);
-    }
-    return result;
-  }
-
-  vector<pos> getNext(const vector<vector<int>> & grid, const std::unordered_set<pos> & cands, const std::unordered_set<pos> & curr) {
+  vector<pos> getNext(const vector<vector<int>> & grid, const pos & curr, const vector<vector<int>> & visited) {
     vector<pos> next;
-    for (auto it = curr.begin(); it != curr.end(); ++it) {
-      pos left(it->x-1, it->y);
-      if (cands.find(left) != cands.end() && curr.find(left) == curr.end() && grid[left.x][left.y] == 0)
-	next.push_back(left);
-      pos right(it->x+1, it->y);
-      if (cands.find(right) != cands.end() && curr.find(right) == curr.end()  && grid[right.x][right.y] == 0)
-	next.push_back(right);
-      pos up(it->x, it->y-1);
-      if (cands.find(up) != cands.end() && curr.find(up) == curr.end() && grid[up.x][up.y] == 0)
-	next.push_back(up);
-      pos down(it->x, it->y+1);
-      if (cands.find(down) != cands.end() && curr.find(down) == curr.end() && grid[down.x][down.y] == 0)
-	next.push_back(down);
-    }
-    
+    if (curr.x > 0 && grid[curr.x-1][curr.y] == 0 && visited[curr.x-1][curr.y] == 0)
+      next.push_back(pos(curr.x-1,curr.y));
+    if (curr.x < grid.size()-1 && grid[curr.x+1][curr.y] == 0 && visited[curr.x+1][curr.y] == 0)
+      next.push_back(pos(curr.x+1,curr.y));
+    if (curr.y > 0 && grid[curr.x][curr.y-1] == 0 && visited[curr.x][curr.y-1] == 0)
+      next.push_back(pos(curr.x,curr.y-1));
+    if (curr.y < grid[0].size()-1 && grid[curr.x][curr.y+1] == 0 && visited[curr.x][curr.y+1] == 0)
+      next.push_back(pos(curr.x,curr.y+1));
     return next;
   }
   
